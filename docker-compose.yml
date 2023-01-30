@@ -30,7 +30,8 @@ x-shared: &shared
     - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
 
-    - EXECUTIONS_MODE=queue
+    # - EXECUTIONS_MODE=queue
+    - EXECUTIONS_MODE=regular
     - QUEUE_BULL_REDIS_HOST=redis
     - QUEUE_HEALTH_CHECK_ACTIVE=true
   links:
@@ -39,6 +40,25 @@ x-shared: &shared
     - n8n_storage:/home/node/.n8n
 
 services:
+  browserless:
+    image: browserless/chrome:latest
+    container_name: "browserless"
+    restart: always
+    environment:
+      - DEBUG=browserless:*
+      - MAX_CONCURRENT_SESSIONS=10
+      - CONNECTION_TIMEOUT=60000
+      - MAX_QUEUE_LENGTH=20
+      - PREBOOT_CHROME=true
+      - DEMO_MODE=false
+      - HOST=0.0.0.0
+      - ENABLE_DEBUGGER=false
+      - TOKEN=${BROWSERLESS_TOKEN}
+      - PORT=3000
+      - WORKSPACE_DELETE_EXPIRED=true
+    ports:
+      - "3000:3000"
+
   traefik:
     image: traefik:latest
     restart: always

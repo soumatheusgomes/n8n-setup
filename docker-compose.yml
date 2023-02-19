@@ -1,11 +1,13 @@
-version: "3.8"
+version: "3.9"
 
 volumes:
   n8n_storage:
   redis_storage:
   traefik_storage:
 
-x-shared: &shared
+x-shared:
+  &shared
+  build: .
   restart: always
   environment:
     - NODE_ENV=production
@@ -30,9 +32,10 @@ x-shared: &shared
     - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
 
-    # - EXECUTIONS_MODE=queue
-    - EXECUTIONS_MODE=regular
+    - EXECUTIONS_MODE=queue
+    # - EXECUTIONS_MODE=regular
     - QUEUE_BULL_REDIS_HOST=redis
+    - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
     - QUEUE_HEALTH_CHECK_ACTIVE=true
   links:
     - redis
@@ -61,6 +64,7 @@ services:
 
   traefik:
     image: traefik:latest
+    container_name: "traefik"
     restart: always
     ports:
       - "80:80"
@@ -82,19 +86,23 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   redis:
-    image: redis:6-alpine
+    image: redis:latest
+    container_name: "redis"
     restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_storage:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 10
 
   n8n:
     <<: *shared
-    image: n8nio/n8n
+    container_name: "n8n-header"
     labels:
       - traefik.enable=true
       - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
@@ -112,14 +120,14 @@ services:
       - traefik.http.routers.n8n.middlewares=n8n@docker
     ports:
       - 5678:5678
-    command: /bin/sh -c "n8n start"
+    command: /bin/sh -c "npm install -g n8n-nodes-browserless; n8n start"
     depends_on:
       - redis
 
   n8n-worker:
     <<: *shared
-    image: n8nio/n8n
-    command: /bin/sh -c "sleep 5; n8n worker"
+    container_name: "n8n-worker"
+    command: /bin/sh -c "npm install -g n8n-nodes-browserless; sleep 5; n8n worker"
     depends_on:
       - redis
       - n8n

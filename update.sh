@@ -4,6 +4,9 @@ sudo apt upgrade -y
 sudo apt autoremove -y
 sudo apt autoclean -y
 
-docker-compose pull
+docker-compose stop
 docker-compose down
+
+docker-compose pull
+docker-compose build
 docker-compose up -d

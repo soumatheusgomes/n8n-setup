@@ -1,8 +1,8 @@
 #!/bin/bash
-sudo apt update
-sudo apt upgrade -y
-sudo apt autoremove -y
-sudo apt autoclean -y
+apt update
+apt upgrade -y
+apt autoremove -y
+apt autoclean -y
 
 docker-compose stop
 docker-compose down -v

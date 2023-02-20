@@ -122,14 +122,14 @@ services:
       - traefik.http.routers.n8n.middlewares=n8n@docker
     ports:
       - 5678:5678
-    command: /bin/sh -c "npm install -g n8n-nodes-browserless; n8n start"
+    command: /bin/sh -c "n8n start"
     depends_on:
       - redis
 
   n8n-worker:
     <<: *shared
     container_name: "n8n-worker"
-    command: /bin/sh -c "npm install -g n8n-nodes-browserless; sleep 5; n8n worker"
+    command: /bin/sh -c "sleep 5; n8n worker"
     depends_on:
       - redis
       - n8n

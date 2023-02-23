@@ -19,7 +19,7 @@ x-shared:
     - N8N_BASIC_AUTH_USER
     - N8N_BASIC_AUTH_PASSWORD
     - N8N_REINSTALL_MISSING_PACKAGES=true
-    # - N8N_LOG_LEVEL=debug
+    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
     - EXECUTIONS_DATA_SAVE_ON_ERROR=none
     - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
 
@@ -41,6 +41,7 @@ x-shared:
     - QUEUE_HEALTH_CHECK_ACTIVE=true
   links:
     - redis
+    - browserless
   volumes:
     - n8n_storage:/home/node/.n8n
 

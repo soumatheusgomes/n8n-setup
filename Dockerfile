@@ -1,5 +1,4 @@
-ARG NODE_VERSION=16
-FROM n8nio/base:${NODE_VERSION}
+FROM n8nio/n8n:latest
 
 ENV NODE_ENV=production
 

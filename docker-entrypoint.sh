@@ -1,12 +1,12 @@
 #!/bin/sh
 
-if [ -d /root/.n8n ] ; then
-  chmod o+rx /root
-  chown -R node /root/.n8n
-  ln -s /root/.n8n /home/node/
+app_data_dir="/home/node/.n8n"
+
+if [ ! -d "$app_data_dir" ]; then
+  mkdir -p "$app_data_dir"
 fi
 
-chown -R node /home/node
+chown -R node:node /home/node
 
 if [ "$#" -gt 0 ]; then
   # Got started with arguments

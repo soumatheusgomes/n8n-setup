@@ -1,6 +1,6 @@
 #!/bin/bash
-yum update
-yum upgrade -y
+apt update
+apt upgrade -y
 
 docker-compose stop
 docker-compose down

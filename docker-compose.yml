@@ -5,132 +5,107 @@ volumes:
   redis_storage:
   traefik_storage:
 
-x-shared:
-  &shared
-  build: .
+x-shared: &shared
   restart: always
+  build: .
   environment:
-    - NODE_ENV=production
-
-    - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
-    - N8N_PORT=5678
-    - N8N_PROTOCOL=https
-    - N8N_BASIC_AUTH_ACTIVE=true
-    - N8N_BASIC_AUTH_USER
-    - N8N_BASIC_AUTH_PASSWORD
-    - N8N_REINSTALL_MISSING_PACKAGES=true
-    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-    - EXECUTIONS_DATA_SAVE_ON_ERROR=none
-    - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
-
-    - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
-    - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-
-    - DB_TYPE=postgresdb
-    - DB_POSTGRESDB_HOST=${POSTGRES_HOST}
-    - DB_POSTGRESDB_PORT=${POSTGRES_PORT}
-    - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
-    - DB_POSTGRESDB_USER=${POSTGRES_USER}
-    - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-    - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
-
-    - EXECUTIONS_MODE=queue
-    # - EXECUTIONS_MODE=regular
-    - QUEUE_BULL_REDIS_HOST=redis
-    - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
-    - QUEUE_HEALTH_CHECK_ACTIVE=true
-  links:
-    - redis
-    - browserless
-  volumes:
-    - n8n_storage:/home/node/.n8n
+    NODE_ENV: "production"
+    N8N_HOST: "${SUBDOMAIN}.${DOMAIN_NAME}"
+    N8N_PORT: "5678"
+    N8N_PROTOCOL: "https"
+    N8N_BASIC_AUTH_ACTIVE: "true"
+    N8N_BASIC_AUTH_USER: "${N8N_BASIC_AUTH_USER}"
+    N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD}"
+    N8N_REINSTALL_MISSING_PACKAGES: "true"
+    N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY}"
+    EXECUTIONS_DATA_SAVE_ON_ERROR: "none"
+    EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"
+    WEBHOOK_URL: "https://${SUBDOMAIN}.${DOMAIN_NAME}/"
+    GENERIC_TIMEZONE: "${GENERIC_TIMEZONE}"
+    DB_TYPE: "postgresdb"
+    DB_POSTGRESDB_HOST: "${POSTGRES_HOST}"
+    DB_POSTGRESDB_PORT: "${POSTGRES_PORT}"
+    DB_POSTGRESDB_DATABASE: "${POSTGRES_DB}"
+    DB_POSTGRESDB_USER: "${POSTGRES_USER}"
+    DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD}"
+    DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: "false"
+    EXECUTIONS_MODE: "queue"
+    QUEUE_BULL_REDIS_HOST: "redis"
+    QUEUE_BULL_REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    QUEUE_HEALTH_CHECK_ACTIVE: "true"
 
 services:
   browserless:
     image: browserless/chrome:latest
-    container_name: "browserless"
     restart: always
     environment:
-      - DEBUG=browserless:*
-      - MAX_CONCURRENT_SESSIONS=10
-      - CONNECTION_TIMEOUT=60000
-      - MAX_QUEUE_LENGTH=20
-      - PREBOOT_CHROME=true
-      - DEMO_MODE=false
-      - HOST=0.0.0.0
-      - ENABLE_DEBUGGER=false
-      - TOKEN=${BROWSERLESS_TOKEN}
-      - PORT=3000
-      - WORKSPACE_DELETE_EXPIRED=true
-    ports:
-      - "3000:3000"
+      DEBUG: "browserless:*"
+      MAX_CONCURRENT_SESSIONS: "10"
+      CONNECTION_TIMEOUT: "60000"
+      MAX_QUEUE_LENGTH: "20"
+      PREBOOT_CHROME: "true"
+      DEMO_MODE: "false"
+      ENABLE_DEBUGGER: "false"
+      TOKEN: "${BROWSERLESS_TOKEN}"
+      PORT: "3000"
+      WORKSPACE_DELETE_EXPIRED: "true"
 
   traefik:
     image: traefik:latest
-    container_name: "traefik"
     restart: always
-    ports:
-      - "80:80"
-      - "443:443"
     command:
-      - "--api=true"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
       - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     volumes:
-      - traefik_storage:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "traefik_storage:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
   redis:
     image: redis:latest
-    container_name: "redis"
     restart: always
-    ports:
-      - 6379:6379
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: "redis-server --requirepass ${REDIS_PASSWORD}"
     volumes:
-      - redis_storage:/data
+      - "redis_storage:/data"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 5s
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
 
   n8n:
     <<: *shared
-    container_name: "n8n-header"
+    restart: always
+    volumes:
+      - "n8n_storage:/home/node/.n8n"
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.n8n.tls=true
-      - traefik.http.routers.n8n.entrypoints=web,websecure
-      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
-      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
-      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
-      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
-      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
-      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
-      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
-      - traefik.http.middlewares.n8n.headers.STSPreload=true
-      - traefik.http.routers.n8n.middlewares=n8n@docker
-    ports:
-      - 5678:5678
-    command: /bin/sh -c "n8n start"
+      traefik.enable: "true"
+      traefik.http.routers.n8n.rule: "Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)"
+      traefik.http.routers.n8n.tls: "true"
+      traefik.http.routers.n8n.entrypoints: "websecure"
+      traefik.http.routers.n8n.tls.certresolver: "mytlschallenge"
+      traefik.http.middlewares.n8n.headers.SSLRedirect: "true"
+      traefik.http.middlewares.n8n.headers.STSSeconds: "315360000"
+      traefik.http.middlewares.n8n.headers.browserXSSFilter: "true"
+      traefik.http.middlewares.n8n.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.n8n.headers.forceSTSHeader: "true"
+      traefik.http.middlewares.n8n.headers.SSLHost: "${DOMAIN_NAME}"
+      traefik.http.middlewares.n8n.headers.STSIncludeSubdomains: "true"
+      traefik.http.middlewares.n8n.headers.STSPreload: "true"
+      traefik.http.routers.n8n.middlewares: "n8n@docker"
     depends_on:
-      - redis
+      - "redis"
 
   n8n-worker:
     <<: *shared
-    container_name: "n8n-worker"
-    command: /bin/sh -c "sleep 5; n8n worker"
+    command: "/bin/sh -c 'sleep 5; n8n worker'"
     depends_on:
-      - redis
-      - n8n
+      - "redis"
+      - "n8n"

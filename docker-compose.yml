@@ -35,6 +35,21 @@ x-shared: &shared
     QUEUE_HEALTH_CHECK_ACTIVE: "true"
 
 services:
+  browserless:
+    image: browserless/chrome:latest
+    restart: always
+    environment:
+      DEBUG: "browserless:*"
+      MAX_CONCURRENT_SESSIONS: "10"
+      CONNECTION_TIMEOUT: "60000"
+      MAX_QUEUE_LENGTH: "20"
+      PREBOOT_CHROME: "true"
+      DEMO_MODE: "false"
+      ENABLE_DEBUGGER: "false"
+      TOKEN: "${BROWSERLESS_TOKEN}"
+      PORT: "3000"
+      WORKSPACE_DELETE_EXPIRED: "true"
+
   traefik:
     image: traefik:latest
     restart: always
@@ -85,6 +100,8 @@ services:
       traefik.http.middlewares.n8n.headers.STSIncludeSubdomains: "true"
       traefik.http.middlewares.n8n.headers.STSPreload: "true"
       traefik.http.routers.n8n.middlewares: "n8n@docker"
+    ports:
+      - "8080:5678"
     depends_on:
       - "redis"
 

@@ -3,14 +3,13 @@ version: "3.9"
 volumes:
   n8n_storage:
   redis_storage:
-  traefik_storage:
 
 x-shared: &shared
   restart: always
   build: .
   environment:
     NODE_ENV: "production"
-    N8N_HOST: "${SUBDOMAIN}.${DOMAIN_NAME}"
+    N8N_HOST: "${HOST}"
     N8N_PORT: "5678"
     N8N_PROTOCOL: "https"
     N8N_BASIC_AUTH_ACTIVE: "true"
@@ -20,7 +19,7 @@ x-shared: &shared
     N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY}"
     EXECUTIONS_DATA_SAVE_ON_ERROR: "none"
     EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"
-    WEBHOOK_URL: "https://${SUBDOMAIN}.${DOMAIN_NAME}/"
+    WEBHOOK_URL: "https://${HOST}/"
     GENERIC_TIMEZONE: "${GENERIC_TIMEZONE}"
     DB_TYPE: "postgresdb"
     DB_POSTGRESDB_HOST: "${POSTGRES_HOST}"
@@ -35,45 +34,21 @@ x-shared: &shared
     QUEUE_HEALTH_CHECK_ACTIVE: "true"
 
 services:
-  healthcheck:
-    image: nginx:alpine
-    restart: always
-    volumes:
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-    ports:
-      - "8080:80"
   browserless:
     image: browserless/chrome:latest
     restart: always
     environment:
       DEBUG: "browserless:*"
-      MAX_CONCURRENT_SESSIONS: "10"
+      MAX_CONCURRENT_SESSIONS: "5"
       CONNECTION_TIMEOUT: "60000"
       MAX_QUEUE_LENGTH: "20"
-      PREBOOT_CHROME: "true"
+      # PREBOOT_CHROME: "true"
       DEMO_MODE: "false"
       ENABLE_DEBUGGER: "false"
       TOKEN: "${BROWSERLESS_TOKEN}"
       PORT: "3000"
       WORKSPACE_DELETE_EXPIRED: "true"
-
-  traefik:
-    image: traefik:latest
-    restart: always
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-    volumes:
-      - "traefik_storage:/letsencrypt"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      WORKSPACE_EXPIRE_DAYS: "1"
 
   redis:
     image: redis:latest
@@ -92,23 +67,8 @@ services:
     restart: always
     volumes:
       - "n8n_storage:/home/node/.n8n"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.n8n.rule: "Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)"
-      traefik.http.routers.n8n.tls: "true"
-      traefik.http.routers.n8n.entrypoints: "websecure"
-      traefik.http.routers.n8n.tls.certresolver: "mytlschallenge"
-      traefik.http.middlewares.n8n.headers.SSLRedirect: "true"
-      traefik.http.middlewares.n8n.headers.STSSeconds: "315360000"
-      traefik.http.middlewares.n8n.headers.browserXSSFilter: "true"
-      traefik.http.middlewares.n8n.headers.contentTypeNosniff: "true"
-      traefik.http.middlewares.n8n.headers.forceSTSHeader: "true"
-      traefik.http.middlewares.n8n.headers.SSLHost: "${DOMAIN_NAME}"
-      traefik.http.middlewares.n8n.headers.STSIncludeSubdomains: "true"
-      traefik.http.middlewares.n8n.headers.STSPreload: "true"
-      traefik.http.routers.n8n.middlewares: "n8n@docker"
-    # ports:
-    #   - "5678:5678"
+    ports:
+      - "80:5678"
     depends_on:
       - "redis"
 

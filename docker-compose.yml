@@ -107,8 +107,8 @@ services:
       traefik.http.middlewares.n8n.headers.STSIncludeSubdomains: "true"
       traefik.http.middlewares.n8n.headers.STSPreload: "true"
       traefik.http.routers.n8n.middlewares: "n8n@docker"
-    ports:
-      - "8080:5678"
+    # ports:
+    #   - "5678:5678"
     depends_on:
       - "redis"
 

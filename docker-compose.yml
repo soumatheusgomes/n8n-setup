@@ -35,6 +35,13 @@ x-shared: &shared
     QUEUE_HEALTH_CHECK_ACTIVE: "true"
 
 services:
+  healthcheck:
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
   browserless:
     image: browserless/chrome:latest
     restart: always

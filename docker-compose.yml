@@ -35,21 +35,6 @@ x-shared: &shared
     QUEUE_HEALTH_CHECK_ACTIVE: "true"
 
 services:
-  browserless:
-    image: browserless/chrome:latest
-    restart: always
-    environment:
-      DEBUG: "browserless:*"
-      MAX_CONCURRENT_SESSIONS: "10"
-      CONNECTION_TIMEOUT: "60000"
-      MAX_QUEUE_LENGTH: "20"
-      PREBOOT_CHROME: "true"
-      DEMO_MODE: "false"
-      ENABLE_DEBUGGER: "false"
-      TOKEN: "${BROWSERLESS_TOKEN}"
-      PORT: "3000"
-      WORKSPACE_DELETE_EXPIRED: "true"
-
   traefik:
     image: traefik:latest
     restart: always

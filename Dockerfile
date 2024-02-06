@@ -5,6 +5,8 @@ ENV NODE_ENV=production
 USER root
 RUN chmod 777 /usr/local/lib/node_modules
 
+RUN apk update && apk add --no-cache postgresql-client && rm -rf /var/cache/apk/*
+
 RUN set -eux; \
     apkArch="$(apk --print-arch)"; \
     if [ "$apkArch" = "armv7" ]; then \

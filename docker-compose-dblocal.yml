@@ -12,7 +12,7 @@ x-shared: &shared
     NODE_ENV: "production"
     N8N_HOST: "${HOST}"
     N8N_PORT: "5678"
-    N8N_PROTOCOL: "https"
+    N8N_PROTOCOL: "${N8N_PROTOCOL}"
     N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY}"
     EXECUTIONS_DATA_SAVE_ON_ERROR: "none"
     EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"

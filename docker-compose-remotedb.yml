@@ -3,7 +3,6 @@ version: "3.9"
 volumes:
   n8n_storage:
   redis_storage:
-  postgres_storage:
 
 x-shared: &shared
   restart: always
@@ -12,26 +11,25 @@ x-shared: &shared
     NODE_ENV: "production"
     N8N_HOST: "${HOST}"
     N8N_PORT: "5678"
-    N8N_PROTOCOL: "${N8N_PROTOCOL}"
+    N8N_PROTOCOL: "https"
     N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY}"
     EXECUTIONS_DATA_SAVE_ON_ERROR: "none"
     EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"
     WEBHOOK_URL: "https://${HOST}/"
     GENERIC_TIMEZONE: "${GENERIC_TIMEZONE}"
     DB_TYPE: "postgresdb"
-    DB_POSTGRESDB_HOST: "postgres"
+    DB_POSTGRESDB_HOST: "${POSTGRES_HOST}"
+    DB_POSTGRESDB_PORT: "${POSTGRES_PORT}"
     DB_POSTGRESDB_DATABASE: "${POSTGRES_DB}"
-    DB_POSTGRESDB_USER: "${POSTGRES_NON_ROOT_USER}"
-    DB_POSTGRESDB_PASSWORD: "${POSTGRES_NON_ROOT_PASSWORD}"
-    DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: "true"
+    DB_POSTGRESDB_USER: "${POSTGRES_USER}"
+    DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD}"
+    DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: "false"
     EXECUTIONS_MODE: "queue"
     QUEUE_BULL_REDIS_HOST: "redis"
     QUEUE_BULL_REDIS_PASSWORD: "${REDIS_PASSWORD}"
     QUEUE_HEALTH_CHECK_ACTIVE: "true"
   depends_on:
     redis:
-      condition: service_healthy
-    postgres:
       condition: service_healthy
 
 services:
@@ -50,24 +48,6 @@ services:
       PORT: "3000"
       WORKSPACE_DELETE_EXPIRED: "true"
       WORKSPACE_EXPIRE_DAYS: "1"
-
-  postgres:
-    image: postgres:16
-    restart: always
-    environment:
-      POSTGRES_DB: "${POSTGRES_DB}"
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_NON_ROOT_USER: "${POSTGRES_NON_ROOT_USER}"
-      POSTGRES_NON_ROOT_PASSWORD: "${POSTGRES_NON_ROOT_PASSWORD}"
-    volumes:
-      - postgres_storage:/var/lib/postgresql/data
-      - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:latest
